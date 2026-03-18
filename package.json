@@ -15,21 +15,17 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
   },
-  "keywords": [
-    "fastify",
-    "standard-schema",
-    "validation",
-    "serialization",
-    "type-provider"
-  ],
+  "keywords": ["fastify", "standard-schema", "validation", "serialization", "type-provider"],
   "peerDependencies": {
     "@standard-schema/spec": "^1.1.0",
     "fastify": "^5.0.0"
@@ -38,6 +34,7 @@
     "fastify-plugin": "^5.0.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@standard-schema/spec": "^1.1.0",
     "@types/node": "^22.13.11",
     "fastify": "^5.2.1",

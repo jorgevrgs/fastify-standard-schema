@@ -1,8 +1,4 @@
-import type {
-  FastifySchemaCompiler,
-  FastifySerializerCompiler,
-  SafePromiseLike,
-} from 'fastify';
+import type { FastifySchemaCompiler, FastifySerializerCompiler, SafePromiseLike } from 'fastify';
 
 import {
   InvalidStandardSchemaError,

@@ -24,18 +24,15 @@ function formatIssuePath(issue: StandardSchemaV1.Issue): string {
   }
 
   return issue.path.reduce<string>((path, segment) => {
-    const key = typeof segment === 'object' && segment !== null && 'key' in segment
-      ? segment.key
-      : segment;
+    const key =
+      typeof segment === 'object' && segment !== null && 'key' in segment ? segment.key : segment;
 
     return `${path}${formatPathSegment(key)}`;
   }, '$');
 }
 
 export function formatIssues(issues: StandardIssue): string {
-  return issues
-    .map((issue) => `${formatIssuePath(issue)}: ${issue.message}`)
-    .join('; ');
+  return issues.map((issue) => `${formatIssuePath(issue)}: ${issue.message}`).join('; ');
 }
 
 export class StandardSchemaValidationError extends Error {
@@ -65,8 +62,7 @@ export class StandardSchemaSerializationError extends Error {
 export class InvalidStandardSchemaError extends TypeError {
   constructor(location: string) {
     super(
-      `fastify-standard-schema expected a Standard Schema-compatible schema for ${location}. ` +
-        'Register this plugin only in scopes that use Standard Schema route schemas.',
+      `fastify-standard-schema expected a Standard Schema-compatible schema for ${location}. Register this plugin only in scopes that use Standard Schema route schemas.`,
     );
     this.name = 'InvalidStandardSchemaError';
   }

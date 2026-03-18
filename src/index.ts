@@ -8,9 +8,7 @@ export {
   StandardSchemaValidationError,
   formatIssues,
 } from './errors.js';
-export {
-  standardSchemaPlugin,
-} from './plugin.js';
+export { standardSchemaPlugin } from './plugin.js';
 export type {
   FastifyPluginAsyncStandardSchema,
   FastifyPluginCallbackStandardSchema,

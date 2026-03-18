@@ -6,10 +6,7 @@ export interface StandardSchemaResponseConfig {
 }
 
 export interface FastifyStandardSchema
-  extends Omit<
-    FastifySchema,
-    'body' | 'querystring' | 'params' | 'headers' | 'response'
-  > {
+  extends Omit<FastifySchema, 'body' | 'querystring' | 'params' | 'headers' | 'response'> {
   body?: StandardSchemaV1;
   querystring?: StandardSchemaV1;
   params?: StandardSchemaV1;
