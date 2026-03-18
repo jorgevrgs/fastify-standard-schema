@@ -23,7 +23,8 @@
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "test": "pnpm build && node --test"
   },
   "keywords": ["fastify", "standard-schema", "validation", "serialization", "type-provider"],
   "peerDependencies": {
