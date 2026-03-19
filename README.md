@@ -81,7 +81,7 @@ const createUserSchema = {
       age: z.number(),
     }),
   },
-} satisfies FastifyStandardSchema;
+};
 
 server.post("/users", { schema: createUserSchema }, async (request, reply) => {
   const user = request.body;
@@ -227,5 +227,5 @@ const schema = {
       page: z.number(),
     }),
   },
-} satisfies FastifyStandardSchema;
+};
 ```

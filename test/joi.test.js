@@ -1,8 +1,6 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-
 import Fastify from 'fastify';
 import Joi from 'joi';
+import { expect, test } from 'vitest';
 
 import { standardSchemaPlugin } from '../dist/index.js';
 
@@ -35,8 +33,8 @@ test('standardSchemaPlugin validates and normalizes requests with joi', async ()
     },
   });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), {
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual({
     name: 'Ada',
     age: 42,
   });
@@ -73,8 +71,8 @@ test('standardSchemaPlugin returns 400 for invalid joi input', async () => {
     },
   });
 
-  assert.equal(response.statusCode, 400);
-  assert.match(response.json().message, /name|age/i);
+  expect(response.statusCode).toBe(400);
+  expect(response.json().message).toMatch(/name|age/i);
 
   await app.close();
 });
@@ -109,8 +107,8 @@ test('standardSchemaPlugin serializes responses with joi', async () => {
     url: '/users/user-1',
   });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), {
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual({
     id: 'user-1',
     age: 42,
   });

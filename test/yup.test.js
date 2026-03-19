@@ -1,7 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-
 import Fastify from 'fastify';
+import { expect, test } from 'vitest';
 import * as yup from 'yup';
 
 import { serializerCompiler, standardSchemaPlugin, validatorCompiler } from '../dist/index.js';
@@ -35,8 +33,8 @@ test('standardSchemaPlugin validates and normalizes requests with yup', async ()
     },
   });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), {
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual({
     name: 'Ada',
     age: 42,
   });
@@ -73,8 +71,8 @@ test('standardSchemaPlugin returns 400 for invalid yup input', async () => {
     },
   });
 
-  assert.equal(response.statusCode, 400);
-  assert.match(response.json().message, /name|age/i);
+  expect(response.statusCode).toBe(400);
+  expect(response.json().message).toMatch(/name|age/i);
 
   await app.close();
 });
@@ -109,8 +107,8 @@ test('standardSchemaPlugin serializes responses with yup', async () => {
     url: '/users/user-1',
   });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), {
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual({
     id: 'user-1',
     age: 42,
   });
@@ -154,9 +152,9 @@ test('serializerCompiler uses yup validateSync fallback for invalid responses', 
     url: '/users/yup-invalid',
   });
 
-  assert.equal(response.statusCode, 500);
-  assert.equal(response.json().code, 'FST_ERR_RESPONSE_SERIALIZATION');
-  assert.match(response.json().message, /id is a required field/);
+  expect(response.statusCode).toBe(500);
+  expect(response.json().code).toBe('FST_ERR_RESPONSE_SERIALIZATION');
+  expect(response.json().message).toMatch(/id is a required field/);
 
   await app.close();
 });
