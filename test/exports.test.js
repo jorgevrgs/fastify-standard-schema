@@ -1,13 +1,15 @@
-import { createRequire } from 'node:module';
+import {
+  isStandardSchema,
+  serializerCompiler,
+  standardSchemaPlugin,
+  validatorCompiler,
+} from '../dist/index.js';
 
 import { expect, test } from 'vitest';
 
-const require = createRequire(import.meta.url);
-const pkg = require('../dist/index.cjs');
-
-test('commonjs bundle exposes the public api', () => {
-  expect(pkg.standardSchemaPlugin).toBeTypeOf('function');
-  expect(pkg.validatorCompiler).toBeTypeOf('function');
-  expect(pkg.serializerCompiler).toBeTypeOf('function');
-  expect(pkg.isStandardSchema).toBeTypeOf('function');
+test('esm bundle exposes the public api', () => {
+  expect(standardSchemaPlugin).toBeTypeOf('function');
+  expect(validatorCompiler).toBeTypeOf('function');
+  expect(serializerCompiler).toBeTypeOf('function');
+  expect(isStandardSchema).toBeTypeOf('function');
 });

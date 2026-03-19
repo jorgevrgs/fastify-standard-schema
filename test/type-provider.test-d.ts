@@ -1,10 +1,10 @@
-import Fastify from "fastify";
-import { expectTypeOf, test } from "vitest";
-import { z } from "zod/v4";
+import Fastify from 'fastify';
+import { expectTypeOf, test } from 'vitest';
+import { z } from 'zod/v4';
 
-import type { StandardSchemaTypeProvider } from "../src/index.ts";
+import type { StandardSchemaTypeProvider } from '../src/index.ts';
 
-test("StandardSchemaTypeProvider infers request output and response input types", () => {
+test('StandardSchemaTypeProvider infers request output and response input types', () => {
   const server = Fastify().withTypeProvider<StandardSchemaTypeProvider>();
 
   const schema = {
@@ -20,7 +20,7 @@ test("StandardSchemaTypeProvider infers request output and response input types"
     },
   };
 
-  server.post("/users", { schema }, async (request, reply) => {
+  server.post('/users', { schema }, async (request, reply) => {
     expectTypeOf(request.body).toEqualTypeOf<{
       name: string;
       age: number;
@@ -34,14 +34,14 @@ test("StandardSchemaTypeProvider infers request output and response input types"
     }>();
 
     reply.code(200).send({
-      id: "user-1",
+      id: 'user-1',
       createdAt: new Date(),
     });
 
     const invalidPayload = {
-      id: "user-1",
+      id: 'user-1',
       // @ts-expect-error response types should use serializer input, not output
-      createdAt: "2026-03-19T00:00:00.000Z",
+      createdAt: '2026-03-19T00:00:00.000Z',
     } satisfies ReplyPayload;
 
     return reply;
