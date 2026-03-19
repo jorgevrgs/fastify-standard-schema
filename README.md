@@ -14,11 +14,14 @@ serialization.
 ## Install
 
 ```sh
-pnpm add fastify fastify-standard-schema @standard-schema/spec
+pnpm add fastify fastify-standard-schema @standard-schema/spec zod
 ```
 
 If you are publishing this package, `fastify` and `@standard-schema/spec` are
 already declared as peer dependencies.
+
+Replace `zod` with whichever Standard Schema library your routes use, such as
+`yup`, `joi`, or `@vinejs/vine`. See [What schema libraries implement the spec?](https://standardschema.dev/schema#what-schema-libraries-implement-the-spec).
 
 ## What it provides
 
@@ -29,17 +32,36 @@ already declared as peer dependencies.
   reply types from schema input
 - `FastifyStandardSchema`: helper type for route `schema` objects
 
+## Tested libraries
+
+The integration tests in this repository currently cover these Standard Schema
+libraries:
+
+| Library        | Request validation | Response serialization | Notes                                                  |
+| -------------- | ------------------ | ---------------------- | ------------------------------------------------------ |
+| `zod`          | Yes                | Yes                    | Uses the Standard Schema adapter directly              |
+| `yup`          | Yes                | Yes                    | Response serialization uses `validateSync()` fallback  |
+| `joi`          | Yes                | Yes                    | Uses Joi's synchronous validation path                 |
+| `@vinejs/vine` | Yes                | No                     | Use `vine.compile(...)`; compiled validators are async |
+
+Fastify request validation supports both sync and async Standard Schema
+validators, but Fastify response serializers are synchronous. Because of that,
+`serializerCompiler` first tries `~standard.validate()`. If that resolves
+asynchronously, it falls back to a synchronous validation method on the schema
+object itself when one exists, such as Yup's `validateSync()`. Libraries that
+only expose async validation, like compiled VineJS schemas, are supported for
+request validation but not for response serialization.
+
 ## Usage
 
 ```ts
-import Fastify from 'fastify';
-import { z } from 'zod/v4';
-
+import Fastify from "fastify";
 import {
   standardSchemaPlugin,
   type FastifyStandardSchema,
   type StandardSchemaTypeProvider,
-} from 'fastify-standard-schema';
+} from "fastify-standard-schema";
+import { z } from "zod/v4";
 
 const app = Fastify();
 
@@ -61,20 +83,16 @@ const createUserSchema = {
   },
 } satisfies FastifyStandardSchema;
 
-server.post(
-  '/users',
-  { schema: createUserSchema },
-  async (request, reply) => {
-    const user = request.body;
-    //    ^? { name: string; age: number }
+server.post("/users", { schema: createUserSchema }, async (request, reply) => {
+  const user = request.body;
+  //    ^? { name: string; age: number }
 
-    return reply.code(201).send({
-      id: crypto.randomUUID(),
-      name: user.name,
-      age: user.age,
-    });
-  },
-);
+  return reply.code(201).send({
+    id: crypto.randomUUID(),
+    name: user.name,
+    age: user.age,
+  });
+});
 ```
 
 ## Type inference model
@@ -93,6 +111,35 @@ That means transformed or coerced request values are reflected in handler input,
 while reply payloads are typed as the values your response schema accepts before
 serialization.
 
+## Other schema libraries
+
+You can pass any Standard Schema-compatible validator to Fastify route schemas.
+For example:
+
+```ts
+import * as yup from "yup";
+import Joi from "joi";
+import vine from "@vinejs/vine";
+
+const yupBody = yup.object({
+  name: yup.string().trim().min(1).required(),
+});
+
+const joiResponse = Joi.object({
+  ok: Joi.boolean().required(),
+});
+
+const vineBody = vine.compile(
+  vine.object({
+    age: vine.number().min(0),
+  }),
+);
+```
+
+`zod`, `yup`, and `joi` can be used for both request and response schemas.
+Compiled VineJS schemas are supported for request validation, but not for
+response serialization because their validation API is async-only.
+
 ## Encapsulation
 
 Fastify compiler registration is encapsulated, so you can scope this plugin to
@@ -105,7 +152,7 @@ await app.register(async function standardSchemaRoutes(instance) {
   const server = instance.withTypeProvider<StandardSchemaTypeProvider>();
 
   server.get(
-    '/health',
+    "/health",
     {
       schema: {
         response: {
@@ -124,11 +171,13 @@ default JSON Schema compilers.
 ## Response validation note
 
 Fastify serializer compilers are synchronous. Because of that,
-`serializerCompiler` only supports Standard Schema implementations whose
-response-side `validate()` function resolves synchronously.
+`serializerCompiler` needs a synchronous validation path.
 
 Async Standard Schema validators still work for requests through
-`validatorCompiler`.
+`validatorCompiler`. For responses, `serializerCompiler` will use a synchronous
+schema-native validator when one is available, such as Yup's `validateSync()`.
+Libraries without a synchronous validation API, such as compiled VineJS
+schemas, are still request-only.
 
 ## API
 

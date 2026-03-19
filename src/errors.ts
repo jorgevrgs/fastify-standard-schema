@@ -18,12 +18,38 @@ function formatPathSegment(segment: PropertyKey): string {
   return `[${JSON.stringify(segment)}]`;
 }
 
+function parseStringPath(path: string): PropertyKey[] {
+  const normalized = path.replaceAll(/\[(\d+)\]/gu, '.$1');
+  const segments = normalized
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  if (segments.length === 0) {
+    return [path];
+  }
+
+  return segments.map((segment) => {
+    const numeric = Number(segment);
+
+    return Number.isInteger(numeric) && String(numeric) === segment ? numeric : segment;
+  });
+}
+
 function formatIssuePath(issue: StandardSchemaV1.Issue): string {
-  if (!issue.path?.length) {
+  const rawPath = issue.path as unknown;
+
+  if (rawPath == null || rawPath === '') {
     return '$';
   }
 
-  return issue.path.reduce<string>((path, segment) => {
+  const pathSegments = Array.isArray(rawPath)
+    ? rawPath
+    : typeof rawPath === 'string'
+      ? parseStringPath(rawPath)
+      : [rawPath as PropertyKey];
+
+  return pathSegments.reduce<string>((path, segment) => {
     const key =
       typeof segment === 'object' && segment !== null && 'key' in segment ? segment.key : segment;
 

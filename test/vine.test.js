@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import vine from '@vinejs/vine';
 import Fastify from 'fastify';
 import { z } from 'zod/v4';
 
-import { standardSchemaPlugin, validatorCompiler, serializerCompiler } from '../dist/index.js';
+import { serializerCompiler, standardSchemaPlugin, validatorCompiler } from '../dist/index.js';
 
-test('standardSchemaPlugin validates requests and serializes responses', async () => {
+test('standardSchemaPlugin validates and normalizes requests with vine', async () => {
   const app = Fastify();
 
   await app.register(standardSchemaPlugin);
@@ -15,25 +16,15 @@ test('standardSchemaPlugin validates requests and serializes responses', async (
     '/users',
     {
       schema: {
-        body: z.object({
-          name: z.string().min(1),
-          age: z.coerce.number().int().nonnegative(),
-        }),
-        response: {
-          201: z.object({
-            id: z.string(),
-            age: z.number(),
+        body: vine.compile(
+          vine.object({
+            name: vine.string().trim().minLength(1),
+            age: vine.number().min(0),
           }),
-        },
+        ),
       },
     },
-    async (request, reply) => {
-      return reply.code(201).send({
-        id: 'user-1',
-        age: request.body.age,
-        ignored: 'removed by serialization',
-      });
-    },
+    async (request) => request.body,
   );
 
   await app.ready();
@@ -42,22 +33,21 @@ test('standardSchemaPlugin validates requests and serializes responses', async (
     method: 'POST',
     url: '/users',
     payload: {
-      name: 'Ada',
+      name: ' Ada ',
       age: '42',
     },
   });
 
-  assert.equal(response.statusCode, 201);
-  assert.equal(response.headers['content-type'], 'application/json; charset=utf-8');
+  assert.equal(response.statusCode, 200);
   assert.deepEqual(response.json(), {
-    id: 'user-1',
+    name: 'Ada',
     age: 42,
   });
 
   await app.close();
 });
 
-test('standardSchemaPlugin returns 400 for invalid input', async () => {
+test('standardSchemaPlugin returns 400 for invalid vine input', async () => {
   const app = Fastify();
 
   await app.register(standardSchemaPlugin);
@@ -66,10 +56,12 @@ test('standardSchemaPlugin returns 400 for invalid input', async () => {
     '/users',
     {
       schema: {
-        body: z.object({
-          name: z.string().min(1),
-          age: z.coerce.number().int().nonnegative(),
-        }),
+        body: vine.compile(
+          vine.object({
+            name: vine.string().trim().minLength(1),
+            age: vine.number().min(0),
+          }),
+        ),
       },
     },
     async () => ({ ok: true }),
@@ -87,14 +79,13 @@ test('standardSchemaPlugin returns 400 for invalid input', async () => {
   });
 
   assert.equal(response.statusCode, 400);
-
-  const body = response.json();
-  assert.match(body.message, /\$\.name|\$\.age/);
+  assert.match(response.json().message, /name|age/i);
+  assert.doesNotMatch(response.json().message, /reduce is not a function/);
 
   await app.close();
 });
 
-test('serializerCompiler surfaces response schema failures', async () => {
+test('serializerCompiler rejects async vine response schemas', async () => {
   const app = Fastify();
 
   app.setValidatorCompiler(validatorCompiler);
@@ -102,7 +93,6 @@ test('serializerCompiler surfaces response schema failures', async () => {
 
   app.setErrorHandler((error, _request, reply) => {
     reply.status(error.statusCode ?? 500).send({
-      code: error.code,
       message: error.message,
     });
   });
@@ -115,28 +105,28 @@ test('serializerCompiler surfaces response schema failures', async () => {
           id: z.string(),
         }),
         response: {
-          200: z.object({
-            id: z.string().uuid(),
-          }),
+          200: vine.compile(
+            vine.object({
+              id: vine.string(),
+            }),
+          ),
         },
       },
     },
-    async (request) => {
-      return {
-        id: request.params.id,
-      };
-    },
+    async (request) => ({
+      id: request.params.id,
+    }),
   );
 
   await app.ready();
 
   const response = await app.inject({
     method: 'GET',
-    url: '/users/not-a-uuid',
+    url: '/users/user-1',
   });
 
   assert.equal(response.statusCode, 500);
-  assert.deepEqual(response.json().code, 'FST_ERR_RESPONSE_SERIALIZATION');
+  assert.match(response.json().message, /must validate synchronously/);
 
   await app.close();
 });
