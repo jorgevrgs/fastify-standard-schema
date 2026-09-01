@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "warn",
+    "nursery": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "restriction": "off",
+    "style": "off",
+    "suspicious": "warn"
+  },
+  "ignorePatterns": ["**/dist", "**/node_modules", "**/.agents", "**/.claude"],
+  "rules": {
+    "oxc/no-async-endpoint-handlers": "off"
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.test-d.ts"],
+      "rules": {
+        "eslint/no-underscore-dangle": "off"
+      }
+    }
+  ]
+}

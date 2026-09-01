@@ -1,7 +1,4 @@
-export {
-  serializerCompiler,
-  validatorCompiler,
-} from './compilers.js';
+export { serializerCompiler, validatorCompiler } from './compilers.js';
 export {
   InvalidStandardSchemaError,
   StandardSchemaSerializationError,
@@ -15,8 +12,5 @@ export type {
   StandardSchemaPluginOptions,
 } from './plugin.js';
 export type { StandardSchemaTypeProvider } from './type-provider.js';
-export type {
-  FastifyStandardSchema,
-  StandardSchemaResponseConfig,
-} from './schema.js';
+export type { FastifyStandardSchema, StandardSchemaResponseConfig } from './schema.js';
 export { isStandardSchema } from './utils.js';
