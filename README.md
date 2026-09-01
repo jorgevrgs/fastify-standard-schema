@@ -229,3 +229,29 @@ const schema = {
   },
 };
 ```
+
+## Benchmarks
+
+Performance reports are generated automatically on release and can be run locally at any time.
+
+```sh
+pnpm benchmark        # full report (10s per scenario)
+pnpm benchmark:quick  # shorter local run (3s per scenario)
+```
+
+Reports are written to:
+
+- `benchmarks/RESULTS.md` — latest run
+- `benchmarks/reports/<version>.md` — versioned archive
+
+HTTP scenarios follow the same layout as [fastify-type-provider-yup](https://github.com/jorgevrgs/fastify-type-provider-yup/tree/main/benchmarks): validation, serializer, and combined runs against JSON Schema, Zod, Yup, and Joi. Vine is included for request validation only — compiled Vine schemas validate asynchronously and cannot be used for response serialization.
+
+Compiler microbenchmarks measure hot paths directly, including the synchronous candidate fallback used by `serializerCompiler` when `~standard.validate` returns a promise.
+
+To run a single server manually:
+
+```sh
+pnpm build
+node benchmarks/validation-zod.benchmark.cjs
+autocannon "http://127.0.0.1:3000/?page=1"
+```
