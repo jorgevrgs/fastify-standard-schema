@@ -1,6 +1,6 @@
 {
   "name": "fastify-standard-schema",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Fastify validation, serialization, and type-provider support for Standard Schema",
   "license": "MIT",
   "type": "module",
@@ -32,6 +32,8 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
+    "benchmark": "pnpm build && node benchmarks/run.mjs",
+    "benchmark:quick": "pnpm build && node benchmarks/run.mjs --quick",
     "test": "pnpm build && vitest run --typecheck && node test/exports-smoke.cjs"
   },
   "keywords": [
@@ -51,6 +53,7 @@
   "devDependencies": {
     "@standard-schema/spec": "^1.1.0",
     "@types/node": "^24.0.0",
+    "autocannon": "^8.0.0",
     "@vinejs/vine": "^4.4.0",
     "fastify": "^5.12.1",
     "joi": "^18.2.5",
