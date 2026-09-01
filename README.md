@@ -242,23 +242,43 @@ const schema = {
 
 ## Benchmarks
 
-Performance reports are generated automatically on release and can be run locally at any time.
+Benchmarks track validation and serialization performance over time. Each release runs the same scenarios so results can be compared across versions on similar hardware.
+
+### What is measured
+
+**HTTP benchmarks** (`benchmarks/*.benchmark.cjs`) spin up minimal Fastify servers and load them with [autocannon](https://github.com/mcollina/autocannon). Each scenario uses the same route shape and payload; only the schema library changes:
+
+| Group | What it exercises |
+| --- | --- |
+| Validation | Request querystring validation |
+| Serializer | Response schema validation + `JSON.stringify` |
+| Validation + Serializer | Both on the same route |
+
+Libraries under test: JSON Schema (Ajv baseline), Zod, Yup, Joi, and Vine (request validation only — Vine has no sync response path).
+
+**Compiler microbenchmarks** (`benchmarks/micro/compiler.mjs`) call compiled validators and serializers directly to measure hot paths without HTTP overhead.
+
+### Running locally
 
 ```sh
-pnpm benchmark        # full report (10s per scenario)
-pnpm benchmark:quick  # shorter local run (3s per scenario)
+pnpm benchmark        # full report (10s per HTTP scenario, 10 connections)
+pnpm benchmark:quick  # shorter smoke run (3s per scenario, 5 connections)
 ```
+
+Both commands run `pnpm build` first so benchmarks always hit the current `dist/` output.
+
+### Reports and reproducibility
 
 Reports are written to:
 
 - `benchmarks/RESULTS.md` — latest run
-- `benchmarks/reports/<version>.md` — versioned archive
+- `benchmarks/reports/<version>.md` — versioned archive committed with each release
 
-HTTP scenarios follow the same layout as [fastify-type-provider-yup](https://github.com/jorgevrgs/fastify-type-provider-yup/tree/main/benchmarks): validation, serializer, and combined runs against JSON Schema, Zod, Yup, and Joi. Vine is included for request validation only — compiled Vine schemas validate asynchronously and cannot be used for response serialization.
+Each report records Node.js version, platform, CPU model, autocannon duration, and connection count. Rankings (fastest/slowest per group) are computed from req/sec or ops/sec so trends are easy to spot.
 
-Compiler microbenchmarks measure hot paths directly, including the synchronous candidate fallback used by `serializerCompiler` when `~standard.validate` returns a promise.
+Absolute numbers vary by machine and load; treat them as **relative** signals on consistent hardware rather than universal targets. The release workflow runs `pnpm benchmark` and uploads the report as a CI artifact for that environment.
 
-To run a single server manually:
+To run a single HTTP scenario manually:
 
 ```sh
 pnpm build
