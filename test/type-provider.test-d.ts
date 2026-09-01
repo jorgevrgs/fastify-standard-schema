@@ -38,7 +38,7 @@ test('StandardSchemaTypeProvider infers request output and response input types'
       createdAt: new Date(),
     });
 
-    const invalidPayload = {
+    const _invalidPayload = {
       id: 'user-1',
       // @ts-expect-error response types should use serializer input, not output
       createdAt: '2026-03-19T00:00:00.000Z',
