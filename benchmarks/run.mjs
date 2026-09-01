@@ -17,6 +17,7 @@ const quick = args.has('--quick');
 const duration = quick ? 3 : 10;
 const connections = quick ? 5 : 10;
 const pipelining = 1;
+const warmup = quick ? { connections: 1, duration: 2 } : { connections: 1, duration: 3 };
 
 const httpBenchmarks = [
   {
@@ -176,6 +177,7 @@ function runAutocannon(url) {
         duration,
         connections,
         pipelining,
+        warmup,
       },
       (error, result) => {
         if (error) {
@@ -293,6 +295,7 @@ function renderMarkdownReport({
   cpuModel,
   durationSeconds,
   connections,
+  warmupSeconds,
   httpResults,
   microResults,
 }) {
@@ -316,6 +319,7 @@ Generated: ${generatedAt}
 | CPU | ${cpuModel} |
 | Duration | ${durationSeconds}s |
 | Connections | ${connections} |
+| Warmup | ${warmupSeconds}s (1 connection, excluded from results) |
 
 ## HTTP Benchmarks (autocannon)
 
@@ -394,6 +398,7 @@ async function main() {
     cpuModel: cpus()[0]?.model ?? 'unknown',
     durationSeconds: duration,
     connections,
+    warmupSeconds: warmup.duration,
     httpResults,
     microResults,
   });

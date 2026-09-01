@@ -1,16 +1,17 @@
 # Benchmark Report — fastify-standard-schema@5.0.2
 
-Generated: 2026-09-01T18:26:12.384Z
+Generated: 2026-09-01T19:15:32.729Z
 
 ## Environment
 
 | Key | Value |
 | --- | --- |
-| Node.js | v24.13.1 |
+| Node.js | v24.20.0 |
 | Platform | darwin arm64 |
 | CPU | unknown |
 | Duration | 3s |
 | Connections | 5 |
+| Warmup | 2s (1 connection, excluded from results) |
 
 ## HTTP Benchmarks (autocannon)
 
@@ -20,29 +21,29 @@ Generated: 2026-09-01T18:26:12.384Z
 
 | Benchmark | Req/sec | Latency (ms) | Throughput | Total requests | Errors |
 | --- | ---: | ---: | --- | ---: | ---: |
-| validation-json | 48,090.67 | 0.01 | 8.30 MB/s | 144,263 | 0 |
-| validation-zod 🐌 | 36,752 | 0.01 | 11.11 MB/s | 110,243 | 0 |
-| validation-yup | 50,810.67 | 0.01 | 8.77 MB/s | 152,446 | 0 |
-| validation-joi | 53,690.67 | 0.01 | 9.27 MB/s | 161,059 | 0 |
-| validation-vine 🥇 | 53,968 | 0.01 | 9.31 MB/s | 161,875 | 0 |
+| validation-json | 42,768 | 0.01 | 7.38 MB/s | 128,301 | 0 |
+| validation-zod 🐌 | 31,789.34 | 0.01 | 9.61 MB/s | 95,370 | 0 |
+| validation-yup | 43,162.67 | 0.01 | 7.45 MB/s | 129,487 | 0 |
+| validation-joi | 47,888 | 0.01 | 8.26 MB/s | 143,644 | 0 |
+| validation-vine 🥇 | 50,757.34 | 0.01 | 8.76 MB/s | 152,259 | 0 |
 
 ### Serializer
 
 | Benchmark | Req/sec | Latency (ms) | Throughput | Total requests | Errors |
 | --- | ---: | ---: | --- | ---: | ---: |
-| serializer-json | 51,984 | 0.01 | 9.32 MB/s | 155,955 | 0 |
-| serializer-zod | 47,962.67 | 0.01 | 8.60 MB/s | 143,885 | 0 |
-| serializer-yup 🥇 | 52,869.34 | 0.01 | 9.48 MB/s | 158,610 | 0 |
-| serializer-joi 🐌 | 45,850.67 | 0.01 | 8.22 MB/s | 137,576 | 0 |
+| serializer-json | 48,005.34 | 0.01 | 8.61 MB/s | 144,032 | 0 |
+| serializer-zod 🐌 | 37,816 | 0.01 | 6.78 MB/s | 113,456 | 0 |
+| serializer-yup | 40,336 | 0.01 | 7.23 MB/s | 121,013 | 0 |
+| serializer-joi 🥇 | 48,272 | 0.01 | 8.65 MB/s | 144,833 | 0 |
 
 ### Validation + Serializer
 
 | Benchmark | Req/sec | Latency (ms) | Throughput | Total requests | Errors |
 | --- | ---: | ---: | --- | ---: | ---: |
-| both-json 🥇 | 55,824 | 0.01 | 9.64 MB/s | 167,465 | 0 |
-| both-zod 🐌 | 37,349.34 | 0.01 | 11.29 MB/s | 112,040 | 0 |
-| both-yup | 44,698.67 | 0.01 | 7.80 MB/s | 134,111 | 0 |
-| both-joi | 50,437.34 | 0.01 | 8.80 MB/s | 151,330 | 0 |
+| both-json 🥇 | 47,440 | 0.01 | 8.19 MB/s | 142,320 | 0 |
+| both-zod | 33,602.67 | 0.01 | 10.16 MB/s | 100,814 | 0 |
+| both-yup 🐌 | 24,522.67 | 0.02 | 4.28 MB/s | 73,558 | 0 |
+| both-joi | 45,861.34 | 0.01 | 8.00 MB/s | 137,555 | 0 |
 
 ## Compiler Microbenchmarks
 
@@ -52,13 +53,13 @@ Direct calls into compiled validators/serializers. The `serializerCompiler sync 
 
 | Benchmark | Iterations | Elapsed (ms) | Ops/sec |
 | --- | ---: | ---: | ---: |
-| isStandardSchema (zod) 🥇 | 200,000 | 2.94 | 68,135,346.78 |
-| isStandardSchema (joi) 🐌 | 200,000 | 7.45 | 26,860,813.04 |
-| isStandardSchema (vine) | 200,000 | 2.97 | 67,343,831.34 |
-| validatorCompiler sync (zod) 🥇 | 200,000 | 5.55 | 36,027,921.64 |
-| validatorCompiler sync (joi) 🐌 | 200,000 | 102.4 | 1,953,149.64 |
-| validatorCompiler async (vine) | 200,000 | 46.66 | 4,285,978.3 |
-| serializerCompiler sync (zod) 🥇 | 200,000 | 16.14 | 12,390,070.65 |
-| serializerCompiler sync (joi) 🐌 | 200,000 | 69.77 | 2,866,659.14 |
-| serializerCompiler sync fallback candidates (safeParse) | 200,000 | 17.02 | 11,749,414.37 |
+| isStandardSchema (zod) 🥇 | 200,000 | 3.01 | 66,357,925.36 |
+| isStandardSchema (joi) 🐌 | 200,000 | 8.11 | 24,652,297.83 |
+| isStandardSchema (vine) | 200,000 | 3.25 | 61,562,139.28 |
+| validatorCompiler sync (zod) 🥇 | 200,000 | 6.45 | 31,022,180.86 |
+| validatorCompiler sync (joi) 🐌 | 200,000 | 111.25 | 1,797,760.23 |
+| validatorCompiler async (vine) | 200,000 | 50.88 | 3,930,875.55 |
+| serializerCompiler sync (zod) 🥇 | 200,000 | 16.9 | 11,837,004.92 |
+| serializerCompiler sync (joi) 🐌 | 200,000 | 74.33 | 2,690,649.32 |
+| serializerCompiler sync fallback candidates (safeParse) | 200,000 | 17.87 | 11,189,541.72 |
 

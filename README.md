@@ -261,11 +261,11 @@ Libraries under test: JSON Schema (Ajv baseline), Zod, Yup, Joi, and Vine (reque
 ### Running locally
 
 ```sh
-pnpm benchmark        # full report (10s per HTTP scenario, 10 connections)
-pnpm benchmark:quick  # shorter smoke run (3s per scenario, 5 connections)
+pnpm benchmark        # full report (10s per HTTP scenario, 10 connections, 3s warmup)
+pnpm benchmark:quick  # shorter smoke run (3s per scenario, 5 connections, 2s warmup)
 ```
 
-Both commands run `pnpm build` first so benchmarks always hit the current `dist/` output.
+Both commands run `pnpm build` first so benchmarks always hit the current `dist/` output. HTTP scenarios use an autocannon warmup phase (1 connection, excluded from reported req/sec) so JIT and server startup do not skew samples.
 
 ### Reports and reproducibility
 
@@ -274,7 +274,7 @@ Reports are written to:
 - `benchmarks/RESULTS.md` — latest run
 - `benchmarks/reports/<version>.md` — versioned archive committed with each release
 
-Each report records Node.js version, platform, CPU model, autocannon duration, and connection count. Rankings (fastest/slowest per group) are computed from req/sec or ops/sec so trends are easy to spot.
+Each report records Node.js version, platform, CPU model, autocannon duration, connection count, and warmup duration. Rankings (fastest/slowest per group) are computed from req/sec or ops/sec so trends are easy to spot.
 
 Absolute numbers vary by machine and load; treat them as **relative** signals on consistent hardware rather than universal targets. The release workflow runs `pnpm benchmark` and uploads the report as a CI artifact for that environment.
 
