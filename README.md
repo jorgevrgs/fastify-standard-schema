@@ -37,20 +37,30 @@ Replace `zod` with whichever Standard Schema library your routes use, such as
 The integration tests in this repository currently cover these Standard Schema
 libraries:
 
-| Library        | Request validation | Response serialization | Notes                                                  |
+| Library        | Request validation | Response serialization | Sync path                                              |
 | -------------- | ------------------ | ---------------------- | ------------------------------------------------------ |
-| `zod`          | Yes                | Yes                    | Uses the Standard Schema adapter directly              |
-| `yup`          | Yes                | Yes                    | Response serialization uses `validateSync()` fallback  |
-| `joi`          | Yes                | Yes                    | Uses Joi's synchronous validation path                 |
-| `@vinejs/vine` | Yes                | No                     | Use `vine.compile(...)`; compiled validators are async |
+| `zod`          | Yes                | Yes                    | `~standard.validate` (sync)                            |
+| `yup`          | Yes                | Yes                    | `validateSync()` (resolved once at compile time)       |
+| `joi`          | Yes                | Yes                    | `~standard.validate` (sync)                            |
+| `@vinejs/vine` | Yes                | No                     | Async only (`vine.compile(...)`)                       |
+| `valibot`      | Yes                | Yes*                   | `~standard.validate` when schema is sync               |
+| `arktype`      | Yes                | Yes*                   | `~standard.validate` (sync)                            |
+| `effect`       | Yes                | Yes*                   | Sync or async depending on schema composition          |
+| `@sinclair/typemap` | Yes           | Yes*                   | Via TypeMap `Compile()` wrapper, not raw TypeBox       |
+
+\*Not covered by integration tests in this repo yet.
 
 Fastify request validation supports both sync and async Standard Schema
-validators, but Fastify response serializers are synchronous. Because of that,
-`serializerCompiler` first tries `~standard.validate()`. If that resolves
-asynchronously, it falls back to a synchronous validation method on the schema
-object itself when one exists, such as Yup's `validateSync()`. Libraries that
-only expose async validation, like compiled VineJS schemas, are supported for
-request validation but not for response serialization.
+validators, but Fastify response serializers are synchronous. At route
+registration time, `serializerCompiler` resolves the fastest synchronous path
+once per schema (cached on the schema object):
+
+1. Use `~standard.validate` when it returns synchronously (Zod, Joi, Valibot sync schemas, ArkType).
+2. Otherwise bind the first working sync helper on the schema object, in order: `validateSync`, `safeParse`, `parse`, `validate` (Yup uses `validateSync`).
+3. Reject schemas with no synchronous path (compiled VineJS, Effect schemas with async transforms, Vine, Mongoose async paths).
+
+Libraries that only expose async validation are supported for request validation
+but not for response serialization. See the [Standard Schema implementers list](https://standardschema.dev/schema#what-schema-libraries-implement-the-spec) for the full ecosystem.
 
 ## Usage
 
@@ -174,10 +184,10 @@ Fastify serializer compilers are synchronous. Because of that,
 `serializerCompiler` needs a synchronous validation path.
 
 Async Standard Schema validators still work for requests through
-`validatorCompiler`. For responses, `serializerCompiler` will use a synchronous
-schema-native validator when one is available, such as Yup's `validateSync()`.
-Libraries without a synchronous validation API, such as compiled VineJS
-schemas, are still request-only.
+`validatorCompiler`. For responses, `serializerCompiler` resolves a synchronous
+path once when the route is registered (see the library table above). Libraries
+without a synchronous validation API, such as compiled VineJS schemas, are still
+request-only.
 
 ## API
 

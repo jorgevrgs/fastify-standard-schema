@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { createStandardSchema, issue } from '../test/helpers/standard-schema.js';
 import { serializerCompiler, validatorCompiler } from './compilers.js';
@@ -114,5 +114,17 @@ describe('serializerCompiler', () => {
     expect(() => serialize({ id: 1 })).toThrow(
       'fastify-standard-schema response schemas must validate synchronously',
     );
+  });
+
+  test('prefers validateSync over async validate for serialization fallback', () => {
+    const validateSync = vi.fn((value: unknown) => value);
+    const schema = createStandardSchema((value) => Promise.resolve({ value }), {
+      validate: () => Promise.resolve({ value: 'async' }),
+      validateSync,
+    });
+    const serialize = serializerCompiler({ schema, ...compilerContext });
+
+    expect(serialize({ id: 1 })).toBe('{"id":1}');
+    expect(validateSync).toHaveBeenCalledWith({ id: 1 });
   });
 });
