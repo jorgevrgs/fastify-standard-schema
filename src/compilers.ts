@@ -11,6 +11,151 @@ import { isStandardSchema } from './utils.js';
 type StandardIssue = ReadonlyArray<StandardSchemaV1.Issue>;
 type StandardValidationResult = { issues?: StandardIssue; value?: unknown };
 
+const SYNC_CANDIDATE_KEYS = ['validateSync', 'safeParse', 'parse', 'validate'] as const;
+type SyncCandidateKey = (typeof SYNC_CANDIDATE_KEYS)[number];
+
+type SerializerStrategy =
+  | { kind: 'standard' }
+  | { kind: 'fallback'; key: SyncCandidateKey }
+  | { kind: 'unsupported' };
+
+const serializerStrategyCache = new WeakMap<StandardSchemaV1, SerializerStrategy>();
+
+function isSyncValidationResult(result: unknown): result is StandardSchemaV1.Result<unknown> {
+  return !isPromiseLike(result);
+}
+
+function swallowPromiseRejection(result: unknown): void {
+  if (isPromiseLike(result)) {
+    Promise.resolve(result).catch(() => {});
+  }
+}
+
+function invokeSyncCandidate(
+  schema: StandardSchemaV1,
+  key: SyncCandidateKey,
+  value: unknown,
+): StandardValidationResult {
+  const candidate = Reflect.get(schema, key);
+
+  if (typeof candidate !== 'function') {
+    throw new TypeError(`Expected ${key} to be a function`);
+  }
+
+  try {
+    const result = Reflect.apply(candidate, schema, [value]);
+
+    if (isPromiseLike(result)) {
+      throw new TypeError(`Expected ${key} to validate synchronously`);
+    }
+
+    return normalizeValidationResult(result);
+  } catch (error) {
+    const issues = normalizeValidationError(error);
+
+    if (issues) {
+      return { issues };
+    }
+
+    throw error;
+  }
+}
+
+function probeSyncCandidateKey(schema: StandardSchemaV1, key: SyncCandidateKey): boolean {
+  const candidate = Reflect.get(schema, key);
+
+  if (typeof candidate !== 'function') {
+    return false;
+  }
+
+  try {
+    const result = Reflect.apply(candidate, schema, [undefined]);
+
+    if (isPromiseLike(result)) {
+      swallowPromiseRejection(result);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    return normalizeValidationError(error) !== null;
+  }
+}
+
+function resolveSyncCandidateKey(schema: StandardSchemaV1): SyncCandidateKey | null {
+  for (const key of SYNC_CANDIDATE_KEYS) {
+    if (probeSyncCandidateKey(schema, key)) {
+      return key;
+    }
+  }
+
+  return null;
+}
+
+function probeStandardValidateIsSync(schema: StandardSchemaV1): boolean {
+  try {
+    const result = schema['~standard'].validate(undefined);
+
+    if (isPromiseLike(result)) {
+      swallowPromiseRejection(result);
+      return false;
+    }
+
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+function resolveSerializerStrategy(schema: StandardSchemaV1): SerializerStrategy {
+  const cached = serializerStrategyCache.get(schema);
+
+  if (cached) {
+    return cached;
+  }
+
+  const strategy: SerializerStrategy = probeStandardValidateIsSync(schema)
+    ? { kind: 'standard' }
+    : ((key) => (key ? { kind: 'fallback', key } : { kind: 'unsupported' }))(
+        resolveSyncCandidateKey(schema),
+      );
+
+  serializerStrategyCache.set(schema, strategy);
+  return strategy;
+}
+
+function serializeWithStrategy(
+  schema: StandardSchemaV1,
+  strategy: SerializerStrategy,
+  value: unknown,
+): string {
+  if (strategy.kind === 'standard') {
+    const result = schema['~standard'].validate(value);
+
+    if (!isSyncValidationResult(result)) {
+      throw new TypeError('fastify-standard-schema expected synchronous ~standard.validate');
+    }
+
+    if (result.issues) {
+      throw new StandardSchemaSerializationError(result.issues);
+    }
+
+    return JSON.stringify(result.value);
+  }
+
+  if (strategy.kind === 'fallback') {
+    const syncResult = invokeSyncCandidate(schema, strategy.key, value);
+
+    if (syncResult.issues) {
+      throw new StandardSchemaSerializationError(syncResult.issues);
+    }
+
+    return JSON.stringify(syncResult.value);
+  }
+
+  return '';
+}
+
 function isObject(value: unknown): value is Record<PropertyKey, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -124,44 +269,6 @@ function normalizeValidationResult(result: unknown): StandardValidationResult {
   return { value: result };
 }
 
-function getSynchronousValidationResult(
-  schema: StandardSchemaV1,
-  value: unknown,
-): StandardValidationResult | null {
-  const candidates = [
-    Reflect.get(schema, 'validateSync'),
-    Reflect.get(schema, 'safeParse'),
-    Reflect.get(schema, 'parse'),
-    Reflect.get(schema, 'validate'),
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate !== 'function') {
-      continue;
-    }
-
-    try {
-      const result = Reflect.apply(candidate, schema, [value]);
-
-      if (isPromiseLike(result)) {
-        continue;
-      }
-
-      return normalizeValidationResult(result);
-    } catch (error) {
-      const issues = normalizeValidationError(error);
-
-      if (issues) {
-        return { issues };
-      }
-
-      throw error;
-    }
-  }
-
-  return null;
-}
-
 export const validatorCompiler: FastifySchemaCompiler<unknown> = ({
   schema,
   method,
@@ -221,29 +328,15 @@ export const serializerCompiler: FastifySerializerCompiler<unknown> = ({
     throw new InvalidStandardSchemaError(`${method} ${url} ${httpStatus}`);
   }
 
+  const strategy = resolveSerializerStrategy(schema);
+
   return (value) => {
-    const result = schema['~standard'].validate(value);
-
-    if (isPromiseLike(result)) {
-      const syncResult = getSynchronousValidationResult(schema, value);
-
-      if (syncResult) {
-        if (syncResult.issues) {
-          throw new StandardSchemaSerializationError(syncResult.issues);
-        }
-
-        return JSON.stringify(syncResult.value);
-      }
-
+    if (strategy.kind === 'unsupported') {
       throw new TypeError(
         `fastify-standard-schema response schemas must validate synchronously (${method} ${url} ${httpStatus}).`,
       );
     }
 
-    if (result.issues) {
-      throw new StandardSchemaSerializationError(result.issues);
-    }
-
-    return JSON.stringify(result.value);
+    return serializeWithStrategy(schema, strategy, value);
   };
 };

@@ -38,5 +38,16 @@ jobs:
           pnpm check
           pnpm test
 
+      - name: Run performance benchmarks
+        run: pnpm benchmark
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report-${{ github.event.release.tag_name || github.sha }}
+          path: |
+            benchmarks/RESULTS.md
+            benchmarks/reports/
+
       - name: Publish package
         run: npm publish --access public
