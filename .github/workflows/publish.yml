@@ -22,11 +22,10 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -38,16 +37,19 @@ jobs:
           pnpm check
           pnpm test
 
-      - name: Run performance benchmarks
-        run: pnpm benchmark
+      - name: Build package
+        run: pnpm build
 
-      - name: Upload benchmark report
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-report-${{ github.event.release.tag_name || github.sha }}
-          path: |
-            benchmarks/RESULTS.md
-            benchmarks/reports/
+      - name: Configure npm auth
+        run: |
+          if [ -n "${NPM_TOKEN}" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> "$HOME/.npmrc"
+            echo "Using NPM_TOKEN for authentication"
+          else
+            echo "No NPM_TOKEN secret found; relying on npm trusted publishing (OIDC)"
+          fi
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish package
-        run: npm publish --access public
+        run: npm publish --access public --provenance
