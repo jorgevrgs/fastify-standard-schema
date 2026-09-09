@@ -1,6 +1,6 @@
 {
   "name": "fastify-standard-schema",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Fastify validation, serialization, and type-provider support for Standard Schema",
   "license": "MIT",
   "type": "module",

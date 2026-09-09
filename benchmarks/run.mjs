@@ -8,8 +8,8 @@ import autocannon from 'autocannon';
 
 import { runCompilerMicrobenchmarks } from './micro/compiler.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, '..');
+const benchmarksDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(benchmarksDir, '..');
 
 const args = new Set(process.argv.slice(2));
 const quick = args.has('--quick');
@@ -137,7 +137,7 @@ function waitForReady(child, timeoutMs = 15_000) {
 }
 
 async function startServer(benchmarkFile, port) {
-  const child = spawn(process.execPath, [path.join(__dirname, benchmarkFile)], {
+  const child = spawn(process.execPath, [path.join(benchmarksDir, benchmarkFile)], {
     cwd: rootDir,
     env: {
       ...process.env,
@@ -294,7 +294,7 @@ function renderMarkdownReport({
   platform,
   cpuModel,
   durationSeconds,
-  connections,
+  connectionCount,
   warmupSeconds,
   httpResults,
   microResults,
@@ -318,7 +318,7 @@ Generated: ${generatedAt}
 | Platform | ${platform} |
 | CPU | ${cpuModel} |
 | Duration | ${durationSeconds}s |
-| Connections | ${connections} |
+| Connections | ${connectionCount} |
 | Warmup | ${warmupSeconds}s (1 connection, excluded from results) |
 
 ## HTTP Benchmarks (autocannon)
@@ -364,7 +364,7 @@ Direct calls into compiled validators/serializers. The \`serializerCompiler sync
 
 async function main() {
   const packageJson = JSON.parse(await readFile(path.join(rootDir, 'package.json'), 'utf8'));
-  const reportsDir = path.join(__dirname, 'reports');
+  const reportsDir = path.join(benchmarksDir, 'reports');
   await mkdir(reportsDir, { recursive: true });
 
   const httpResults = [];
@@ -397,14 +397,14 @@ async function main() {
     platform: `${process.platform} ${process.arch}`,
     cpuModel: cpus()[0]?.model ?? 'unknown',
     durationSeconds: duration,
-    connections,
+    connectionCount: connections,
     warmupSeconds: warmup.duration,
     httpResults,
     microResults,
   });
 
   const versionReportPath = path.join(reportsDir, `${packageJson.version}.md`);
-  const latestReportPath = path.join(__dirname, 'RESULTS.md');
+  const latestReportPath = path.join(benchmarksDir, 'RESULTS.md');
 
   await writeFile(versionReportPath, markdown);
   await writeFile(latestReportPath, markdown);

@@ -276,7 +276,7 @@ Reports are written to:
 
 Each report records Node.js version, platform, CPU model, autocannon duration, connection count, and warmup duration. Rankings (fastest/slowest per group) are computed from req/sec or ops/sec so trends are easy to spot.
 
-Absolute numbers vary by machine and load; treat them as **relative** signals on consistent hardware rather than universal targets. The release workflow runs `pnpm benchmark` and uploads the report as a CI artifact for that environment.
+Absolute numbers vary by machine and load; treat them as **relative** signals on consistent hardware rather than universal targets. The `Benchmarks` GitHub Actions workflow runs `pnpm benchmark` on each release (and on `workflow_dispatch`) and uploads the report as a CI artifact. Publishing to npm is a separate `Publish` workflow so a slow or failed benchmark never blocks a release.
 
 To run a single HTTP scenario manually:
 
